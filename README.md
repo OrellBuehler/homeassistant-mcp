@@ -149,6 +149,30 @@ Run a single test file:
 npx vitest run src/__tests__/entities.test.ts
 ```
 
+## CI / Releasing
+
+- **CI** (`.github/workflows/ci.yml`) runs on every push to `main` and on pull requests:
+  `format:check`, `lint`, `typecheck` (once) and `test` + `build` on Node 20 and 22.
+- **Publish** (`.github/workflows/publish.yml`) runs when a GitHub Release is published (or manually
+  via _workflow_dispatch_). It re-runs the full gate, verifies the release tag matches
+  `package.json`, and publishes to npm with
+  [provenance](https://docs.npmjs.com/generating-provenance-statements).
+
+One-time setup: create an npm **automation** token (npmjs.com → Access Tokens) and add it as a
+repository secret named `NPM_TOKEN`:
+
+```bash
+gh secret set NPM_TOKEN
+```
+
+Cut a release:
+
+```bash
+npm version patch          # bumps package.json + creates a vX.Y.Z tag (use minor/major as needed)
+git push --follow-tags
+gh release create "v$(node -p "require('./package.json').version")" --generate-notes
+```
+
 ## License
 
 [MIT](./LICENSE) © Orell Bühler
