@@ -153,17 +153,15 @@ npx vitest run src/__tests__/entities.test.ts
 
 - **CI** (`.github/workflows/ci.yml`) runs on every push to `main` and on pull requests:
   `format:check`, `lint`, `typecheck` (once) and `test` + `build` on Node 20 and 22.
-- **Publish** (`.github/workflows/publish.yml`) runs when a GitHub Release is published (or manually
-  via _workflow_dispatch_). It re-runs the full gate, verifies the release tag matches
-  `package.json`, and publishes to npm with
-  [provenance](https://docs.npmjs.com/generating-provenance-statements).
+- **Publish** (`.github/workflows/publish.yml`) runs when a GitHub Release is published. It builds,
+  tests, and publishes to npm using [trusted publishing](https://docs.npmjs.com/trusted-publishers)
+  (OIDC) — **no `NPM_TOKEN` secret required**, with provenance generated automatically. It skips
+  publishing if that version is already on npm.
 
-One-time setup: create an npm **automation** token (npmjs.com → Access Tokens) and add it as a
-repository secret named `NPM_TOKEN`:
-
-```bash
-gh secret set NPM_TOKEN
-```
+One-time setup on npmjs.com: open the package's **Settings → Trusted Publisher** and add a GitHub
+Actions publisher for repository `OrellBuehler/homeassistant-mcp` with workflow `publish.yml`. If the
+package doesn't exist on npm yet, do one manual `npm publish --access public` (after `npm login`) to
+create it, then add the trusted publisher for all future releases.
 
 Cut a release:
 
