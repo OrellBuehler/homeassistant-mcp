@@ -1,5 +1,10 @@
 # homeassistant-mcp
 
+[![npm](https://img.shields.io/npm/v/@orellbuehler/homeassistant-mcp.svg)](https://www.npmjs.com/package/@orellbuehler/homeassistant-mcp)
+[![CI](https://github.com/OrellBuehler/homeassistant-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/OrellBuehler/homeassistant-mcp/actions/workflows/ci.yml)
+[![node](https://img.shields.io/node/v/@orellbuehler/homeassistant-mcp.svg)](https://nodejs.org)
+[![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
+
 MCP server for [Home Assistant](https://www.home-assistant.io/) that exposes the
 [REST API](https://www.home-assistant.io/integrations/api/) and WebSocket registries as tools for
 AI agents.
@@ -24,7 +29,9 @@ claude mcp add homeassistant \
   -- npx -y @orellbuehler/homeassistant-mcp
 ```
 
-See [Usage with Claude Code](#usage-with-claude-code) for the equivalent JSON config.
+See [Usage with Claude Code](#usage-with-claude-code) for the equivalent JSON config. For any other
+MCP client, run the package directly — `npx -y @orellbuehler/homeassistant-mcp` with `HASS_URL` and
+`HASS_TOKEN` set in the environment. Requires Node.js 18+.
 
 ## Getting a token
 
