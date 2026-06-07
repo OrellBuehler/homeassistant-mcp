@@ -37,6 +37,7 @@ export function registerSystemTools(server: McpServer, client: HassClient) {
       lines: z
         .number()
         .int()
+        .min(0)
         .optional()
         .describe("Number of trailing lines to return (default 100; use 0 for the full log)"),
     },

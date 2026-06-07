@@ -419,4 +419,43 @@ describe("energy tools", () => {
     expect(res.isError).toBe(true);
     expect(res.content[0].text).toContain("unauthorized");
   });
+
+  it("add_energy_devices preserves device_consumption_water by not sending it", async () => {
+    mockFetch.mockResolvedValueOnce(mockStates([energySensor("sensor.a")]));
+    const ws = makeWs({
+      energy_sources: [{ type: "grid" }],
+      device_consumption: [],
+      device_consumption_water: [{ stat_consumption: "sensor.water_meter" }],
+    });
+    const tools = collectTools(ws.command);
+    await tools.get("add_energy_devices")!({ entity_ids: ["sensor.a"] });
+    expect(ws.saved[0].device_consumption_water).toBeUndefined();
+    const after = payload(await tools.get("get_energy_prefs")!({}));
+    expect(after.device_consumption_water).toEqual([{ stat_consumption: "sensor.water_meter" }]);
+  });
+
+  it("validate_energy_prefs correlates water-device issues with stat_consumption", async () => {
+    const ws = makeWs(
+      {
+        energy_sources: [],
+        device_consumption: [],
+        device_consumption_water: [
+          { stat_consumption: "sensor.w1" },
+          { stat_consumption: "sensor.w2" },
+        ],
+      },
+      {
+        validate: {
+          energy_sources: [],
+          device_consumption: [],
+          device_consumption_water: [[], [{ type: "entity_unavailable" }]],
+        },
+      },
+    );
+    const tools = collectTools(ws.command);
+    const p = payload(await tools.get("validate_energy_prefs")!({}));
+    expect(p.device_consumption_water).toHaveLength(1);
+    expect(p.device_consumption_water[0].stat_consumption).toBe("sensor.w2");
+    expect(p.device_consumption_water[0].issues[0].type).toBe("entity_unavailable");
+  });
 });

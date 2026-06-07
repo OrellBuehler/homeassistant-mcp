@@ -31,7 +31,7 @@ claude mcp add homeassistant \
 
 See [Usage with Claude Code](#usage-with-claude-code) for the equivalent JSON config. For any other
 MCP client, run the package directly — `npx -y @orellbuehler/homeassistant-mcp` with `HASS_URL` and
-`HASS_TOKEN` set in the environment. Requires Node.js 18+.
+`HASS_TOKEN` set in the environment. Requires Node.js 20+.
 
 ## Getting a token
 
@@ -144,7 +144,9 @@ available immediately. Verify with `claude mcp list` (should show `homeassistant
 
 The Energy dashboard config lives in `.storage/energy` and is only reachable over WebSocket (not
 REST). The write tools (`save_energy_prefs`, `add_`/`remove_energy_devices`, `set_energy_*`) call
-`energy/save_prefs`, which **requires an admin token**.
+`energy/save_prefs`, which **requires an admin token**. They are read-modify-write (fetch the current
+prefs, then save), so editing the Energy dashboard in the HA UI at the same moment can be overwritten
+— this is fine for the intended single-agent use.
 
 **Traces** (WebSocket, read-only)
 

@@ -25,9 +25,11 @@ const hoisted = vi.hoisted(() => {
     }
     close() {
       this.closed = true;
+      this.emit("close");
     }
     terminate() {
       this.terminated = true;
+      this.emit("close");
     }
   }
   return { FakeWS };
@@ -106,12 +108,36 @@ describe("HassWsClient", () => {
     await expect(p).rejects.toMatchObject({ code: "ERR_NOT_FOUND" });
   });
 
-  it("rejects on timeout", async () => {
+  it("rejects on timeout and terminates the socket", async () => {
     vi.useFakeTimers();
     const client = new HassWsClient("ws://ha/api/websocket", "tok", 1000);
     const p = client.command("x");
     p.catch(() => {});
+    const ws = latest();
     await vi.advanceTimersByTimeAsync(1000);
     await expect(p).rejects.toThrow(/timed out/);
+    expect(ws.terminated).toBe(true);
+  });
+
+  it("rejects when the socket closes before a result arrives", async () => {
+    const client = new HassWsClient("ws://ha/api/websocket", "tok");
+    const p = client.command("x");
+    p.catch(() => {});
+    const ws = latest();
+    emit(ws, { type: "auth_ok" });
+    ws.emit("close");
+    await expect(p).rejects.toThrow(/closed before a result/);
+  });
+
+  it("ignores a close event after the result resolved (no double-settle)", async () => {
+    const client = new HassWsClient("ws://ha/api/websocket", "tok");
+    const p = client.command("x");
+    const ws = latest();
+    emit(ws, { type: "auth_ok" });
+    emit(ws, { id: 1, type: "result", success: true, result: 42 });
+    await expect(p).resolves.toBe(42);
+    expect(ws.closed).toBe(true);
+    expect(() => ws.emit("close")).not.toThrow();
+    await expect(p).resolves.toBe(42);
   });
 });

@@ -1,9 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-vi.stubEnv("HASS_URL", "http://localhost:8123");
-vi.stubEnv("HASS_TOKEN", "test-token");
-
-const { registerReloadTools } = await import("../tools/reload.js");
+const { registerReloadTools, RELOAD_TARGETS } = await import("../tools/reload.js");
 const { HassClient } = await import("../hass/rest.js");
 
 type ToolHandler = (args: any) => Promise<{ content: { text: string }[]; isError?: boolean }>;
@@ -68,5 +65,36 @@ describe("reload tool", () => {
       "http://localhost:8123/api/services/automation/reload",
       expect.objectContaining({ method: "POST" }),
     );
+  });
+
+  it("every target maps to the conventional domain.service", () => {
+    for (const [key, { domain, service }] of Object.entries(RELOAD_TARGETS)) {
+      if (key === "all") {
+        expect({ domain, service }).toEqual({ domain: "homeassistant", service: "reload_all" });
+      } else if (key === "core") {
+        expect({ domain, service }).toEqual({
+          domain: "homeassistant",
+          service: "reload_core_config",
+        });
+      } else {
+        expect({ domain, service }).toEqual({ domain: key, service: "reload" });
+      }
+    }
+  });
+
+  it("each target posts to its reload service endpoint", async () => {
+    for (const target of Object.keys(RELOAD_TARGETS)) {
+      mockFetch.mockResolvedValueOnce(mockJson([]));
+      const res = await tools.get("reload")!({ target });
+      const { domain, service } = RELOAD_TARGETS[target];
+      expect(mockFetch).toHaveBeenLastCalledWith(
+        `http://localhost:8123/api/services/${domain}/${service}`,
+        expect.objectContaining({ method: "POST" }),
+      );
+      expect(JSON.parse(res.content[0].text)).toMatchObject({
+        reloaded: target,
+        service: `${domain}.${service}`,
+      });
+    }
   });
 });

@@ -17,6 +17,19 @@ describe("buildQS", () => {
   it("serializes scalar values", () => {
     expect(buildQS({ a: 1, b: true })).toBe("?a=1&b=true");
   });
+
+  it("skips empty arrays", () => {
+    expect(buildQS({ a: [], b: 1 })).toBe("?b=1");
+  });
+
+  it("keeps zero and false scalars", () => {
+    expect(buildQS({ a: 0, b: false })).toBe("?a=0&b=false");
+  });
+
+  it("url-encodes special characters in values and array elements", () => {
+    expect(buildQS({ q: "a b&c" })).toBe("?q=a+b%26c");
+    expect(buildQS({ ids: ["x&y", "z"] })).toBe("?ids=x%26y%2Cz");
+  });
 });
 
 describe("ok / err", () => {

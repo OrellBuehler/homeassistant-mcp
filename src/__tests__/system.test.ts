@@ -1,18 +1,23 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-
-vi.stubEnv("HASS_URL", "http://localhost:8123");
-vi.stubEnv("HASS_TOKEN", "test-token");
+import { z } from "zod";
 
 const { registerSystemTools } = await import("../tools/system.js");
 const { HassClient } = await import("../hass/rest.js");
 
 type ToolHandler = (args: any) => Promise<{ content: { text: string }[]; isError?: boolean }>;
 
+const schemas = new Map<string, Record<string, z.ZodTypeAny>>();
 function collectTools() {
   const tools = new Map<string, ToolHandler>();
   const server = {
-    tool: (name: string, _desc: string, _schema: unknown, handler: ToolHandler) => {
+    tool: (
+      name: string,
+      _desc: string,
+      schema: Record<string, z.ZodTypeAny>,
+      handler: ToolHandler,
+    ) => {
       tools.set(name, handler);
+      schemas.set(name, schema);
     },
   };
   registerSystemTools(server as any, new HassClient("http://localhost:8123", "test-token"));
@@ -46,10 +51,11 @@ describe("system tools", () => {
     vi.restoreAllMocks();
   });
 
-  it("get_config fetches /api/config", async () => {
+  it("get_config fetches /api/config and returns the payload", async () => {
     mockFetch.mockResolvedValueOnce(mockJson({ version: "2026.6.0" }));
-    await tools.get("get_config")!({});
+    const res = await tools.get("get_config")!({});
     expect(mockFetch).toHaveBeenCalledWith("http://localhost:8123/api/config", expect.any(Object));
+    expect(JSON.parse(res.content[0].text)).toEqual({ version: "2026.6.0" });
   });
 
   it("check_config POSTs to the check_config endpoint", async () => {
@@ -77,5 +83,23 @@ describe("system tools", () => {
     mockFetch.mockResolvedValueOnce(mockText("a\nb\nc"));
     const res = await tools.get("get_error_log")!({ lines: 0 });
     expect(res.content[0].text).toBe("a\nb\nc");
+  });
+
+  it("get_error_log defaults to the last 100 lines", async () => {
+    const log = Array.from({ length: 150 }, (_, i) => `line ${i + 1}`).join("\n");
+    mockFetch.mockResolvedValueOnce(mockText(log));
+    const res = await tools.get("get_error_log")!({});
+    const lines = res.content[0].text.split("\n");
+    expect(lines).toHaveLength(100);
+    expect(lines[0]).toBe("line 51");
+    expect(lines.at(-1)).toBe("line 150");
+  });
+
+  it("get_error_log schema rejects negative lines but allows 0 and omission", () => {
+    const shape = schemas.get("get_error_log")!;
+    expect(z.object(shape).safeParse({ lines: -1 }).success).toBe(false);
+    expect(z.object(shape).safeParse({ lines: 0 }).success).toBe(true);
+    expect(z.object(shape).safeParse({ lines: 5 }).success).toBe(true);
+    expect(z.object(shape).safeParse({}).success).toBe(true);
   });
 });

@@ -1,8 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-vi.stubEnv("HASS_URL", "http://localhost:8123");
-vi.stubEnv("HASS_TOKEN", "test-token");
-
 const { registerTemplateTools } = await import("../tools/templates.js");
 const { HassClient } = await import("../hass/rest.js");
 

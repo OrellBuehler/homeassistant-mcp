@@ -1,8 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-vi.stubEnv("HASS_URL", "http://localhost:8123");
-vi.stubEnv("HASS_TOKEN", "test-token");
-
 const { registerServiceTools } = await import("../tools/services.js");
 const { HassClient } = await import("../hass/rest.js");
 
@@ -71,9 +68,11 @@ describe("service tools", () => {
     expect(JSON.parse(res.content[0].text)).toEqual({ domain: "nope", services: {} });
   });
 
-  it("list_events fetches the events endpoint", async () => {
-    mockFetch.mockResolvedValueOnce(mockJson([{ event: "state_changed", listener_count: 5 }]));
-    await tools.get("list_events")!({});
+  it("list_events fetches the events endpoint and returns the payload", async () => {
+    const events = [{ event: "state_changed", listener_count: 5 }];
+    mockFetch.mockResolvedValueOnce(mockJson(events));
+    const res = await tools.get("list_events")!({});
     expect(mockFetch).toHaveBeenCalledWith("http://localhost:8123/api/events", expect.any(Object));
+    expect(JSON.parse(res.content[0].text)).toEqual(events);
   });
 });

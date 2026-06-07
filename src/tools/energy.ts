@@ -189,7 +189,7 @@ export function registerEnergyTools(server: McpServer, ws: HassWsClient, client:
 
   server.tool(
     "validate_energy_prefs",
-    "Run Home Assistant's energy/validate against the current preferences and return per-item issues. device_consumption and energy_sources issues are correlated with their stat_consumption / source so you can see which entity each issue belongs to. Includes the raw validation result.",
+    "Run Home Assistant's energy/validate against the current preferences and return per-item issues. device_consumption, device_consumption_water and energy_sources issues are correlated with their stat_consumption / source so you can see which entity each issue belongs to. Includes the raw validation result.",
     {},
     async () => {
       try {
@@ -205,10 +205,16 @@ export function registerEnergyTools(server: McpServer, ws: HassWsClient, client:
             issues,
           }))
           .filter((d) => Array.isArray(d.issues) && d.issues.length > 0);
+        const device_consumption_water = (result.device_consumption_water ?? [])
+          .map((issues, i) => ({
+            stat_consumption: prefs.device_consumption_water?.[i]?.stat_consumption ?? null,
+            issues,
+          }))
+          .filter((d) => Array.isArray(d.issues) && d.issues.length > 0);
         const energy_sources = (result.energy_sources ?? [])
           .map((issues, i) => ({ source: prefs.energy_sources?.[i] ?? null, issues }))
           .filter((s) => Array.isArray(s.issues) && s.issues.length > 0);
-        return ok({ device_consumption, energy_sources, raw: result });
+        return ok({ device_consumption, device_consumption_water, energy_sources, raw: result });
       } catch (e) {
         return err(e);
       }

@@ -1,8 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-vi.stubEnv("HASS_URL", "http://localhost:8123");
-vi.stubEnv("HASS_TOKEN", "test-token");
-
 const { registerHistoryTools } = await import("../tools/history.js");
 const { HassClient } = await import("../hass/rest.js");
 
@@ -69,5 +66,19 @@ describe("history tools", () => {
     const url = mockFetch.mock.calls[0][0] as string;
     expect(url).toContain("/api/logbook/2026-06-01T00%3A00%3A00");
     expect(url).toContain("entity=light.kitchen");
+  });
+
+  it("get_history omits boolean flags that are false", async () => {
+    mockFetch.mockResolvedValueOnce(mockJson([]));
+    await tools.get("get_history")!({
+      entity_id: "sensor.temp",
+      minimal_response: false,
+      significant_changes_only: false,
+      no_attributes: false,
+    });
+    const url = mockFetch.mock.calls[0][0] as string;
+    expect(url).not.toContain("minimal_response");
+    expect(url).not.toContain("significant_changes_only");
+    expect(url).not.toContain("no_attributes");
   });
 });

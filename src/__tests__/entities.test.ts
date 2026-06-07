@@ -1,8 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-vi.stubEnv("HASS_URL", "http://localhost:8123");
-vi.stubEnv("HASS_TOKEN", "test-token");
-
 const { registerEntityTools } = await import("../tools/entities.js");
 const { HassClient } = await import("../hass/rest.js");
 
@@ -83,13 +80,15 @@ describe("entity tools", () => {
     expect(payload.entities[0].entity_id).toBe("light.bedroom");
   });
 
-  it("get_entity fetches the single-state endpoint", async () => {
-    mockFetch.mockResolvedValueOnce(mockJson({ entity_id: "light.kitchen", state: "on" }));
-    await tools.get("get_entity")!({ entity_id: "light.kitchen" });
+  it("get_entity fetches the single-state endpoint and returns the entity", async () => {
+    const entity = { entity_id: "light.kitchen", state: "on", attributes: { friendly_name: "K" } };
+    mockFetch.mockResolvedValueOnce(mockJson(entity));
+    const res = await tools.get("get_entity")!({ entity_id: "light.kitchen" });
     expect(mockFetch).toHaveBeenCalledWith(
       "http://localhost:8123/api/states/light.kitchen",
       expect.any(Object),
     );
+    expect(JSON.parse(res.content[0].text)).toEqual(entity);
   });
 
   it("list_domains aggregates counts sorted by domain", async () => {

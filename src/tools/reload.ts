@@ -3,7 +3,7 @@ import { z } from "zod";
 import { ok, err } from "../hass/format.js";
 import type { HassClient } from "../hass/rest.js";
 
-const RELOAD_TARGETS: Record<string, { domain: string; service: string }> = {
+export const RELOAD_TARGETS: Record<string, { domain: string; service: string }> = {
   all: { domain: "homeassistant", service: "reload_all" },
   core: { domain: "homeassistant", service: "reload_core_config" },
   automation: { domain: "automation", service: "reload" },
