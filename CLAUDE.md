@@ -52,9 +52,10 @@ and connects it over stdio. Each tool calls either the REST `client` or the WebS
   type.
 - **`src/tools/*.ts`** — each exports a `register*Tools(server, client|wsClient)` function that
   `server.ts` calls. Groups: `entities`, `services`, `system`, `templates`, `history`, `reload` (REST),
-  `registry` (WebSocket), and `energy` (Energy dashboard prefs over WebSocket; its
-  `registerEnergyTools(server, wsClient, client)` also takes the REST `client` for entity eligibility
-  checks — the only group that takes both).
+  `registry` (WebSocket), `energy` (Energy dashboard prefs over WebSocket), and `trace`
+  (automation/script execution traces over WebSocket). `energy` and `trace` also take the REST
+  `client` — energy to check entity eligibility, trace to resolve an automation's `id` — so their
+  signature is `register*Tools(server, wsClient, client)`.
 
 ## Conventions
 

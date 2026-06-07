@@ -9,6 +9,7 @@ import { registerHistoryTools } from "./tools/history.js";
 import { registerReloadTools } from "./tools/reload.js";
 import { registerRegistryTools } from "./tools/registry.js";
 import { registerEnergyTools } from "./tools/energy.js";
+import { registerTraceTools } from "./tools/trace.js";
 
 export function createServer(client: HassClient, wsClient: HassWsClient): McpServer {
   const server = new McpServer({ name: "homeassistant-mcp", version: "0.2.0" });
@@ -20,5 +21,6 @@ export function createServer(client: HassClient, wsClient: HassWsClient): McpSer
   registerReloadTools(server, client);
   registerRegistryTools(server, wsClient);
   registerEnergyTools(server, wsClient, client);
+  registerTraceTools(server, wsClient, client);
   return server;
 }

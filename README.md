@@ -146,6 +146,17 @@ The Energy dashboard config lives in `.storage/energy` and is only reachable ove
 REST). The write tools (`save_energy_prefs`, `add_`/`remove_energy_devices`, `set_energy_*`) call
 `energy/save_prefs`, which **requires an admin token**.
 
+**Traces** (WebSocket, read-only)
+
+| Tool                 | Description                                                                         |
+| -------------------- | ----------------------------------------------------------------------------------- |
+| `list_traces`        | Recent execution traces (newest first) for an `automation.*`/`script.*` entity.     |
+| `get_trace`          | Full step-by-step trace for one run (config, variables, context, error).            |
+| `get_trace_contexts` | Map context ids to the trace run that produced them (causality across automations). |
+
+Pass an `automation.*` or `script.*` entity id; the trace key is resolved automatically. Use these
+to debug **whether and how** an automation you authored actually ran.
+
 ## Safety boundary
 
 - **No device control.** There is no generic `call_service`, no `set_state`, and no `fire_event`.
