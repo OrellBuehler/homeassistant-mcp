@@ -12,7 +12,7 @@ import { registerEnergyTools } from "./tools/energy.js";
 import { registerTraceTools } from "./tools/trace.js";
 
 export function createServer(client: HassClient, wsClient: HassWsClient): McpServer {
-  const server = new McpServer({ name: "homeassistant-mcp", version: "0.2.0" });
+  const server = new McpServer({ name: "homeassistant-mcp", version: "0.3.0" });
   registerEntityTools(server, client);
   registerServiceTools(server, client);
   registerSystemTools(server, client);
