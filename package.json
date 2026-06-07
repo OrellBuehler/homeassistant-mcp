@@ -19,7 +19,7 @@
     "lint": "eslint src",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "prepare": "npm run build"
+    "prepare": "npm run build && prek install"
   },
   "engines": {
     "node": ">=20"
@@ -54,6 +54,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@j178/prek": "^0.4.4",
     "@types/node": "^22.15.3",
     "@types/ws": "^8.5.12",
     "eslint": "^10.4.1",
