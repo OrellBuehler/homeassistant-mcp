@@ -25,11 +25,11 @@ async function resolveTarget(entityId: string, client: HassClient): Promise<Trac
       `Traces are only available for automation.* or script.* entities, got ${entityId}`,
     );
   }
+  const objectId = entityId.slice(domain.length + 1);
+  if (!objectId) {
+    throw new Error(`Invalid ${domain} entity id: ${entityId}`);
+  }
   if (domain === "script") {
-    const objectId = entityId.slice("script.".length);
-    if (!objectId) {
-      throw new Error(`Invalid script entity id: ${entityId}`);
-    }
     return { domain, item_id: objectId };
   }
   const state = (await client.fetch(`/api/states/${encodeURIComponent(entityId)}`)) as HassState;
@@ -44,13 +44,14 @@ async function resolveTarget(entityId: string, client: HassClient): Promise<Trac
 
 function startMs(t: TraceSummary): number {
   const s = t.timestamp?.start;
-  return s ? Date.parse(s) : 0;
+  const n = s ? Date.parse(s) : 0;
+  return Number.isNaN(n) ? 0 : n;
 }
 
 export function registerTraceTools(server: McpServer, ws: HassWsClient, client: HassClient) {
   server.tool(
     "list_traces",
-    "List recent execution traces (newest first) for an automation or script via the WebSocket trace API — to debug whether and how it ran. Each summary has run_id, state, script_execution (finished/error/aborted/cancelled/…), last_step and any error. Use get_trace with a run_id for the full step-by-step trace.",
+    "List recent execution traces (newest first) for an automation or script via the WebSocket trace API — to debug whether and how it ran. Each summary has run_id, state, script_execution (finished/error/aborted/cancelled/…), last_step, timestamp and any error. Use get_trace with a run_id for the full step-by-step trace.",
     { entity_id: z.string().describe("An automation.* or script.* entity id") },
     async ({ entity_id }) => {
       try {

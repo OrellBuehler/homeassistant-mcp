@@ -71,6 +71,10 @@ describe("trace tools", () => {
     expect(p.count).toBe(2);
     expect(p.traces.map((t: any) => t.run_id)).toEqual(["r2", "r1"]);
     expect(p.traces[0]).toMatchObject({ run_id: "r2", script_execution: "error", error: "boom" });
+    expect(p.traces[0].timestamp).toEqual({
+      start: "2026-06-07T11:00:00+00:00",
+      finish: "2026-06-07T11:00:01+00:00",
+    });
     expect(p.traces[1].error).toBeUndefined();
   });
 
@@ -168,5 +172,57 @@ describe("trace tools", () => {
     const res = await tools.get("list_traces")!({ entity_id: "script.morning" });
     expect(res.isError).toBe(true);
     expect(res.content[0].text).toContain("trace boom");
+  });
+
+  it("list_traces sorts robustly when timestamps are missing or unparseable", async () => {
+    const summaries = [
+      { run_id: "old", timestamp: { start: "2026-06-07T10:00:00+00:00" } },
+      { run_id: "new", timestamp: { start: "2026-06-07T12:00:00+00:00" } },
+      { run_id: "nostamp" },
+      { run_id: "garbage", timestamp: { start: "not-a-date" } },
+    ];
+    const command = vi.fn().mockResolvedValue(summaries);
+    const tools = collectTools(command);
+    const res = await tools.get("list_traces")!({ entity_id: "script.morning" });
+    const p = payload(res);
+    expect(res.isError).toBeUndefined();
+    expect(p.count).toBe(4);
+    expect(p.traces[0].run_id).toBe("new");
+    expect(p.traces[1].run_id).toBe("old");
+  });
+
+  it("list_traces treats a null trace/list result as no traces", async () => {
+    const command = vi.fn().mockResolvedValue(null);
+    const tools = collectTools(command);
+    const res = await tools.get("list_traces")!({ entity_id: "script.morning" });
+    expect(res.isError).toBeUndefined();
+    expect(payload(res).count).toBe(0);
+  });
+
+  it("resolves an automation whose id attribute is the number 0", async () => {
+    mockFetch.mockResolvedValueOnce(
+      mockState({ entity_id: "automation.zero", attributes: { id: 0 } }),
+    );
+    const command = vi.fn().mockResolvedValue([]);
+    const tools = collectTools(command);
+    await tools.get("list_traces")!({ entity_id: "automation.zero" });
+    expect(command).toHaveBeenCalledWith("trace/list", { domain: "automation", item_id: "0" });
+  });
+
+  it("rejects a bare 'automation' id without making a REST call", async () => {
+    const command = vi.fn();
+    const tools = collectTools(command);
+    const res = await tools.get("list_traces")!({ entity_id: "automation" });
+    expect(res.isError).toBe(true);
+    expect(mockFetch).not.toHaveBeenCalled();
+    expect(command).not.toHaveBeenCalled();
+  });
+
+  it("get_trace rejects a non-automation/script entity without calling the trace API", async () => {
+    const command = vi.fn();
+    const tools = collectTools(command);
+    const res = await tools.get("get_trace")!({ entity_id: "light.kitchen", run_id: "r1" });
+    expect(res.isError).toBe(true);
+    expect(command).not.toHaveBeenCalled();
   });
 });
