@@ -67,13 +67,13 @@ export class HassWsClient {
           if (msg.success) {
             finish(() => resolve(msg.result));
           } else {
-            finish(() =>
-              reject(
-                new Error(
-                  `Home Assistant WebSocket error: ${msg.error?.message ?? "unknown error"}`,
-                ),
-              ),
-            );
+            finish(() => {
+              const error = new Error(
+                `Home Assistant WebSocket error: ${msg.error?.message ?? "unknown error"}`,
+              ) as Error & { code?: string };
+              if (msg.error?.code) error.code = msg.error.code;
+              reject(error);
+            });
           }
         }
       });

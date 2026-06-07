@@ -91,6 +91,21 @@ describe("HassWsClient", () => {
     await expect(p).rejects.toThrow(/boom/);
   });
 
+  it("attaches the HA error code to an unsuccessful result", async () => {
+    const client = new HassWsClient("ws://ha/api/websocket", "tok");
+    const p = client.command("x");
+    p.catch(() => {});
+    const ws = latest();
+    emit(ws, { type: "auth_ok" });
+    emit(ws, {
+      id: 1,
+      type: "result",
+      success: false,
+      error: { code: "ERR_NOT_FOUND", message: "No prefs" },
+    });
+    await expect(p).rejects.toMatchObject({ code: "ERR_NOT_FOUND" });
+  });
+
   it("rejects on timeout", async () => {
     vi.useFakeTimers();
     const client = new HassWsClient("ws://ha/api/websocket", "tok", 1000);

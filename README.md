@@ -6,9 +6,10 @@ AI agents.
 
 It is built to **help an agent author and validate Home Assistant configuration and automations** —
 not to control your home. It tells the agent what exists live (entities, services, events, areas,
-devices), validates the agent's work (render Jinja2 templates, check config, read the error log), and
-can reload reloadable domains after YAML edits. It deliberately has **no tools to turn devices on/off,
-set states, or fire events**.
+devices), validates the agent's work (render Jinja2 templates, check config, read the error log),
+can reload reloadable domains after YAML edits, and can configure the Energy dashboard (sources and
+the Individual-devices list). It deliberately has **no tools to turn devices on/off, set states, or
+fire events**.
 
 ## Install
 
@@ -122,12 +123,31 @@ available immediately. Verify with `claude mcp list` (should show `homeassistant
 `list_entities` (REST) shows entities that currently have state; `list_registry_entities`
 (WebSocket) shows everything registered, including disabled entities, with area/device grouping.
 
+**Energy dashboard** (WebSocket)
+
+| Tool                      | Description                                                                         |
+| ------------------------- | ----------------------------------------------------------------------------------- |
+| `get_energy_prefs`        | Current Energy dashboard preferences (sources + the Individual-devices list).       |
+| `save_energy_prefs`       | Overwrite preferences (read-modify-write; replaces each provided key).              |
+| `add_energy_devices`      | Append entities to Individual devices, deduped, with optional eligibility warnings. |
+| `remove_energy_devices`   | Remove entities from Individual devices by `stat_consumption`.                      |
+| `validate_energy_prefs`   | Run `energy/validate` and correlate issues with each entity/source.                 |
+| `set_energy_grid_source`  | Set the single grid source (import/export plus optional cost/price stats).          |
+| `set_energy_solar_source` | Add or update a solar production source (upsert by `stat_energy_from`).             |
+
+The Energy dashboard config lives in `.storage/energy` and is only reachable over WebSocket (not
+REST). The write tools (`save_energy_prefs`, `add_`/`remove_energy_devices`, `set_energy_*`) call
+`energy/save_prefs`, which **requires an admin token**.
+
 ## Safety boundary
 
 - **No device control.** There is no generic `call_service`, no `set_state`, and no `fire_event`.
   The server cannot turn things on/off.
 - **`reload` is restricted** to a fixed allowlist of `*.reload` / `homeassistant.reload_*` services.
   It restarts reloadable domains (e.g. re-reads `automations.yaml`) but cannot control devices.
+- **Energy dashboard config is writable** via `energy/save_prefs` (the `*_energy_*` tools). This is
+  configuration authoring — the dashboard's sources and Individual-devices list — not device control,
+  and it needs an admin token. No `call_service`, `set_state`, or `fire_event` is added.
 - **Read tools expose your home's data** (entity names, states, areas) to the agent/LLM. Use a
   scoped HA user if that matters to you.
 - Prefer `https` and a trusted network path to your instance.

@@ -52,7 +52,9 @@ and connects it over stdio. Each tool calls either the REST `client` or the WebS
   type.
 - **`src/tools/*.ts`** — each exports a `register*Tools(server, client|wsClient)` function that
   `server.ts` calls. Groups: `entities`, `services`, `system`, `templates`, `history`, `reload` (REST),
-  and `registry` (WebSocket).
+  `registry` (WebSocket), and `energy` (Energy dashboard prefs over WebSocket; its
+  `registerEnergyTools(server, wsClient, client)` also takes the REST `client` for entity eligibility
+  checks — the only group that takes both).
 
 ## Conventions
 
@@ -63,9 +65,11 @@ ok(await client.fetch(...)); } catch (e) { return err(e); } })`. The third argum
   shape object (`{}` when there are no params). Match this try/catch-`ok`/`err` style exactly.
 - **Don't add comments, docstrings, or type annotations** unless they already exist in the file you're
   editing (per global preference).
-- **Scope is read + validate + reload — never device control.** Do not add `call_service`, `set_state`,
-  or `fire_event`. New write capability must stay within the dev-assist boundary; `reload` is limited to
-  the `RELOAD_TARGETS` allowlist in `src/tools/reload.ts`.
+- **Scope is read + validate + author config + reload — never device control.** Do not add
+  `call_service`, `set_state`, or `fire_event`. New write capability must stay within the dev-assist
+  boundary: `reload` is limited to the `RELOAD_TARGETS` allowlist in `src/tools/reload.ts`, and the
+  `energy` tools write only Energy dashboard preferences via `energy/save_prefs` (config authoring, not
+  device control; HA requires an admin token for the write).
 - **Secrets:** the repo is public. Never log the token; only read it from env. Tests use fake
   credentials.
 
