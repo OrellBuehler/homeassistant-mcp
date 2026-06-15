@@ -68,6 +68,53 @@ describe("registry tools", () => {
     });
   });
 
+  it("rename_entity sends name and new_entity_id to config/entity_registry/update", async () => {
+    const command = vi.fn().mockResolvedValue({ entity_entry: { entity_id: "cover.wz_links" } });
+    const tools = collectTools(command);
+    const res = await tools.get("rename_entity")!({
+      entity_id: "cover.storen_wohnzimmer_links",
+      name: "Wohnzimmer Links",
+      new_entity_id: "cover.wz_links",
+    });
+    expect(command).toHaveBeenCalledWith("config/entity_registry/update", {
+      entity_id: "cover.storen_wohnzimmer_links",
+      name: "Wohnzimmer Links",
+      new_entity_id: "cover.wz_links",
+    });
+    expect(JSON.parse(res.content[0].text).entity_entry.entity_id).toBe("cover.wz_links");
+  });
+
+  it("rename_entity forwards a null name to revert to the original name", async () => {
+    const command = vi.fn().mockResolvedValue({ entity_entry: {} });
+    const tools = collectTools(command);
+    await tools.get("rename_entity")!({ entity_id: "cover.wz_links", name: null });
+    expect(command).toHaveBeenCalledWith("config/entity_registry/update", {
+      entity_id: "cover.wz_links",
+      name: null,
+    });
+  });
+
+  it("rename_entity requires at least one of name or new_entity_id", async () => {
+    const command = vi.fn();
+    const tools = collectTools(command);
+    const res = await tools.get("rename_entity")!({ entity_id: "cover.wz_links" });
+    expect(command).not.toHaveBeenCalled();
+    expect(res.isError).toBe(true);
+    expect(res.content[0].text).toContain("at least one");
+  });
+
+  it("rename_entity rejects a new_entity_id that changes the domain", async () => {
+    const command = vi.fn();
+    const tools = collectTools(command);
+    const res = await tools.get("rename_entity")!({
+      entity_id: "cover.wz_links",
+      new_entity_id: "light.wz_links",
+    });
+    expect(command).not.toHaveBeenCalled();
+    expect(res.isError).toBe(true);
+    expect(res.content[0].text).toContain("cover");
+  });
+
   it("list_devices prefers name_by_user over name", async () => {
     const command = vi.fn().mockResolvedValue([
       {
