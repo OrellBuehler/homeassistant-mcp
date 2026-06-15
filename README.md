@@ -120,15 +120,19 @@ available immediately. Verify with `claude mcp list` (should show `homeassistant
 
 **Registries** (WebSocket)
 
-| Tool                     | Description                                                                 |
-| ------------------------ | --------------------------------------------------------------------------- |
-| `list_registry_entities` | ALL registered entities, incl. disabled/unavailable (area, device, status). |
-| `list_devices`           | Devices (id, name, manufacturer, model, area).                              |
-| `list_areas`             | Areas (area_id, name, floor).                                               |
-| `list_labels`            | Labels (label_id, name, color, icon).                                       |
+| Tool                     | Description                                                                              |
+| ------------------------ | ---------------------------------------------------------------------------------------- |
+| `list_registry_entities` | ALL registered entities, incl. disabled/unavailable (area, device, status).              |
+| `rename_entity`          | Set an entity's registry `name` and/or `new_entity_id` (config edit, no device control). |
+| `list_devices`           | Devices (id, name, manufacturer, model, area).                                           |
+| `list_areas`             | Areas (area_id, name, floor).                                                            |
+| `list_labels`            | Labels (label_id, name, color, icon).                                                    |
 
 `list_entities` (REST) shows entities that currently have state; `list_registry_entities`
 (WebSocket) shows everything registered, including disabled entities, with area/device grouping.
+`rename_entity` writes the registry via `config/entity_registry/update` (requires an admin token):
+`name` overrides the friendly name (null reverts to the integration's `original_name`) and
+`new_entity_id` renames the entity_id within the same domain.
 
 **Energy dashboard** (WebSocket)
 

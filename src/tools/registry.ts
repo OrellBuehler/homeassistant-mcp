@@ -59,6 +59,43 @@ export function registerRegistryTools(server: McpServer, ws: HassWsClient) {
   );
 
   server.tool(
+    "rename_entity",
+    "Rename an entity in the entity registry via the WebSocket API (config/entity_registry/update). Set 'name' to override the friendly name (pass null to revert to the integration's original_name) and/or 'new_entity_id' to change the entity_id itself (must keep the same domain). At least one of name or new_entity_id is required. This edits registry config only — it does not control any device. Returns the updated entity_entry.",
+    {
+      entity_id: z
+        .string()
+        .describe("Current entity_id to rename, e.g. 'cover.storen_wohnzimmer_links'"),
+      name: z
+        .string()
+        .nullable()
+        .optional()
+        .describe("New friendly name; null reverts to the integration's original_name"),
+      new_entity_id: z
+        .string()
+        .optional()
+        .describe("New entity_id; must keep the same domain, e.g. 'cover.wohnzimmer_links'"),
+    },
+    async ({ entity_id, name, new_entity_id }) => {
+      try {
+        if (name === undefined && new_entity_id === undefined) {
+          throw new Error("Provide at least one of 'name' or 'new_entity_id' to rename the entity");
+        }
+        if (new_entity_id !== undefined && domainOf(new_entity_id) !== domainOf(entity_id)) {
+          throw new Error(
+            `new_entity_id must stay in the '${domainOf(entity_id)}' domain (got '${new_entity_id}')`,
+          );
+        }
+        const payload: Record<string, unknown> = { entity_id };
+        if (name !== undefined) payload.name = name;
+        if (new_entity_id !== undefined) payload.new_entity_id = new_entity_id;
+        return ok(await ws.command("config/entity_registry/update", payload));
+      } catch (e) {
+        return err(e);
+      }
+    },
+  );
+
+  server.tool(
     "list_devices",
     "List devices from the device registry via the WebSocket API (id, name, manufacturer, model, area_id). Useful for grouping entities by physical device when writing automations.",
     {},
