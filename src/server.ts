@@ -10,9 +10,10 @@ import { registerReloadTools } from "./tools/reload.js";
 import { registerRegistryTools } from "./tools/registry.js";
 import { registerEnergyTools } from "./tools/energy.js";
 import { registerTraceTools } from "./tools/trace.js";
+import { registerZhaTools } from "./tools/zha.js";
 
 export function createServer(client: HassClient, wsClient: HassWsClient): McpServer {
-  const server = new McpServer({ name: "homeassistant-mcp", version: "0.4.0" });
+  const server = new McpServer({ name: "homeassistant-mcp", version: "0.5.0" });
   registerEntityTools(server, client);
   registerServiceTools(server, client);
   registerSystemTools(server, client);
@@ -22,5 +23,6 @@ export function createServer(client: HassClient, wsClient: HassWsClient): McpSer
   registerRegistryTools(server, wsClient);
   registerEnergyTools(server, wsClient, client);
   registerTraceTools(server, wsClient, client);
+  registerZhaTools(server, wsClient);
   return server;
 }

@@ -163,6 +163,26 @@ prefs, then save), so editing the Energy dashboard in the HA UI at the same mome
 Pass an `automation.*` or `script.*` entity id; the trace key is resolved automatically. Use these
 to debug **whether and how** an automation you authored actually ran.
 
+**ZHA / Zigbee groups** (WebSocket)
+
+| Tool                       | Description                                                                         |
+| -------------------------- | ----------------------------------------------------------------------------------- |
+| `list_zha_groups`          | Existing ZHA groups (group_id, name, members).                                      |
+| `list_zha_groupable`       | Endpoints that can join a group (ieee + endpoint_id + their entities).              |
+| `create_zha_group`         | Create a group on the coordinator; members by `entity_id` or `{ieee, endpoint_id}`. |
+| `add_zha_group_members`    | Add members to a group.                                                             |
+| `remove_zha_group_members` | Remove members from a group.                                                        |
+| `remove_zha_group`         | Delete group(s) by id (member devices untouched).                                   |
+
+A ZHA group lives on the Zigbee coordinator and is exposed to HA as one group entity (e.g. a single
+`light.*` that drives all members together via Zigbee multicast). This is **configuration
+authoring**, not device control — like creating a helper, it changes what entities exist, not their
+on/off state. The write tools call `zha/group/*` and **require an admin token**. Members must be
+groupable ZHA endpoints (devices that support the Zigbee Groups cluster); `create_zha_group` /
+`add_zha_group_members` accept `entity_id`s and resolve them to `{ieee, endpoint_id}` via
+`list_zha_groupable`, or you can pass the `{ieee, endpoint_id}` pairs directly. The HA group entity
+is created asynchronously, so read its final `entity_id` from the entity registry afterwards.
+
 ## Safety boundary
 
 - **No device control.** There is no generic `call_service`, no `set_state`, and no `fire_event`.
@@ -172,6 +192,9 @@ to debug **whether and how** an automation you authored actually ran.
 - **Energy dashboard config is writable** via `energy/save_prefs` (the `*_energy_*` tools). This is
   configuration authoring — the dashboard's sources and Individual-devices list — not device control,
   and it needs an admin token. No `call_service`, `set_state`, or `fire_event` is added.
+- **ZHA groups are writable** via `zha/group/*` (the `*_zha_group*` tools). Creating/editing a Zigbee
+  group changes which group entities exist (config authoring), not any device's on/off state, and it
+  needs an admin token. Still no `call_service`, `set_state`, or `fire_event`.
 - **Read tools expose your home's data** (entity names, states, areas) to the agent/LLM. Use a
   scoped HA user if that matters to you.
 - Prefer `https` and a trusted network path to your instance.
