@@ -14,16 +14,29 @@ function collectTools(command: any) {
   return tools;
 }
 
+// Mirrors real HA: the endpoint-level `entities` come back as nulls; the
+// entity_ids are only available under `device.entities`.
 const GROUPABLE = [
   {
     endpoint_id: 11,
-    entities: [{ entity_id: "light.philips_iris_tv_left", name: "Iris Left" }],
-    device: { ieee: "00:11:22:33:44:55:66:01", name: "Iris Left" },
+    entities: [null, null],
+    device: {
+      ieee: "00:11:22:33:44:55:66:01",
+      name: "Iris Left",
+      entities: [
+        { entity_id: "button.iris_left_identify", name: "Iris Left" },
+        { entity_id: "light.philips_iris_tv_left", name: "Iris Left" },
+      ],
+    },
   },
   {
     endpoint_id: 11,
-    entities: [{ entity_id: "light.philips_iris_tv_right", name: "Iris Right" }],
-    device: { ieee: "00:11:22:33:44:55:66:02", name: "Iris Right" },
+    entities: [null, null],
+    device: {
+      ieee: "00:11:22:33:44:55:66:02",
+      name: "Iris Right",
+      entities: [{ entity_id: "light.philips_iris_tv_right", name: "Iris Right" }],
+    },
   },
 ];
 
@@ -46,8 +59,8 @@ describe("zha tools", () => {
     expect(payload.endpoints[0]).toMatchObject({
       ieee: "00:11:22:33:44:55:66:01",
       endpoint_id: 11,
-      entities: ["light.philips_iris_tv_left"],
     });
+    expect(payload.endpoints[0].entities).toContain("light.philips_iris_tv_left");
   });
 
   it("create_zha_group resolves entity_ids to ieee+endpoint then calls zha/group/add", async () => {

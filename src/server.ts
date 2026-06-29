@@ -13,7 +13,7 @@ import { registerTraceTools } from "./tools/trace.js";
 import { registerZhaTools } from "./tools/zha.js";
 
 export function createServer(client: HassClient, wsClient: HassWsClient): McpServer {
-  const server = new McpServer({ name: "homeassistant-mcp", version: "0.5.0" });
+  const server = new McpServer({ name: "homeassistant-mcp", version: "0.5.1" });
   registerEntityTools(server, client);
   registerServiceTools(server, client);
   registerSystemTools(server, client);

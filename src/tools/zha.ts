@@ -14,13 +14,30 @@ interface ZhaDeviceInfo {
   user_given_name?: string | null;
   manufacturer?: string;
   model?: string;
+  entities?: Array<ZhaEntityRef | null>;
 }
 
 interface GroupableEndpoint {
   name?: string;
   endpoint_id: number;
-  entities: ZhaEntityRef[];
+  entities?: Array<ZhaEntityRef | null>;
   device: ZhaDeviceInfo;
+}
+
+// An entity_id can be listed either on the groupable endpoint itself or, on some
+// HA versions where the endpoint list comes back empty/null, only under the
+// device. Check both.
+function endpointHasEntity(ep: GroupableEndpoint, entityId: string): boolean {
+  const onEndpoint = ep.entities?.some((e) => e?.entity_id === entityId);
+  const onDevice = ep.device?.entities?.some((e) => e?.entity_id === entityId);
+  return Boolean(onEndpoint || onDevice);
+}
+
+function endpointEntityIds(ep: GroupableEndpoint): string[] {
+  const refs = [...(ep.entities ?? []), ...(ep.device?.entities ?? [])];
+  return [
+    ...new Set(refs.filter((e): e is ZhaEntityRef => !!e?.entity_id).map((e) => e.entity_id)),
+  ];
 }
 
 const memberSchema = z.union([
@@ -42,7 +59,7 @@ async function resolveMembers(ws: HassWsClient, members: Member[]): Promise<Reso
   }
   return members.map((m) => {
     if (typeof m !== "string") return { ieee: m.ieee, endpoint_id: m.endpoint_id };
-    const hit = groupable.find((ep) => ep.entities?.some((e) => e.entity_id === m));
+    const hit = groupable.find((ep) => endpointHasEntity(ep, m));
     if (!hit) {
       throw new Error(
         `'${m}' is not a groupable ZHA entity. A ZHA group member must be a ZHA entity on an endpoint that supports the Zigbee Groups cluster (see list_zha_groupable). Non-ZHA entities (Wi-Fi/Shelly/Hue-bridge/etc.) cannot join a ZHA group.`,
@@ -77,7 +94,7 @@ export function registerZhaTools(server: McpServer, ws: HassWsClient) {
           ieee: ep.device?.ieee ?? null,
           endpoint_id: ep.endpoint_id,
           device_name: ep.device?.user_given_name ?? ep.device?.name ?? null,
-          entities: (ep.entities ?? []).map((e) => e.entity_id),
+          entities: endpointEntityIds(ep),
         }));
         return ok({ count: endpoints.length, endpoints });
       } catch (e) {
