@@ -206,8 +206,9 @@ is globally in YAML mode. This is config authoring, not device control.
 
 `list_hacs_repositories` maps each repo to `id` + `local_path`/`file_name`, so you can tell which
 `/hacsfiles/…` Lovelace resource belongs to a plugin. `remove_hacs_repository` calls
-`hacs/repository/remove` (**admin token**) and deletes the plugin's files, but not its Lovelace
-resource — pair it with `delete_lovelace_resource` to fully clean up a frontend plugin. Removing an
+`hacs/repository/remove` (**admin token**) and deletes the plugin's files; when HACS manages
+resources (storage mode) it also drops the plugin's Lovelace resource for you, so verify with
+`list_lovelace_resources` and only `delete_lovelace_resource` one that's left behind. Removing an
 integration you still reference in YAML will break that config, so check usage first.
 
 ## Safety boundary

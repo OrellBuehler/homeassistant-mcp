@@ -67,7 +67,7 @@ export function registerResourceTools(server: McpServer, ws: HassWsClient) {
 
   server.tool(
     "delete_lovelace_resource",
-    "Delete a Lovelace resource (lovelace/resources/delete) by id — removes the JS/CSS URL from every dashboard. Config authoring; requires an admin token and storage-mode resources. Use this to clear the dangling /hacsfiles/… resource left behind after remove_hacs_repository. Get the resource_id from list_lovelace_resources.",
+    "Delete a Lovelace resource (lovelace/resources/delete) by id — removes the JS/CSS URL from every dashboard. Config authoring; requires an admin token and storage-mode resources. Use this for manually-registered resources (e.g. /local/…) or a /hacsfiles/… resource that HACS did not auto-remove after remove_hacs_repository. Get the resource_id from list_lovelace_resources.",
     {
       resource_id: z.string().describe("The resource id from list_lovelace_resources."),
     },

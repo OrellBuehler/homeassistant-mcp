@@ -65,7 +65,7 @@ export function registerHacsTools(server: McpServer, ws: HassWsClient) {
 
   server.tool(
     "remove_hacs_repository",
-    "Uninstall a HACS repository by id (hacs/repository/remove) — deletes its downloaded files from the config (for a plugin, the JS under www/community/…) and unregisters it from HACS. Requires an admin token. This does NOT remove the plugin's Lovelace resource entry; after removing a frontend plugin, also delete its /hacsfiles/… resource with delete_lovelace_resource. Get the id from list_hacs_repositories. Removing an installed integration you still reference in YAML will break that config, so confirm nothing uses it first.",
+    "Uninstall a HACS repository by id (hacs/repository/remove) — deletes its downloaded files from the config (for a plugin, the JS under www/community/…) and unregisters it from HACS. Requires an admin token. When HACS manages resources (storage mode) it also removes the plugin's /hacsfiles/… Lovelace resource for you; verify with list_lovelace_resources and use delete_lovelace_resource only if one is left behind. Get the id from list_hacs_repositories. Removing an installed integration you still reference in YAML will break that config, so confirm nothing uses it first.",
     {
       repository_id: z
         .string()
