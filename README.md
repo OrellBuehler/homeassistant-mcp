@@ -12,9 +12,9 @@ AI agents.
 It is built to **help an agent author and validate Home Assistant configuration and automations** —
 not to control your home. It tells the agent what exists live (entities, services, events, areas,
 devices), validates the agent's work (render Jinja2 templates, check config, read the error log),
-can reload reloadable domains after YAML edits, and can configure the Energy dashboard (sources and
-the Individual-devices list). It deliberately has **no tools to turn devices on/off, set states, or
-fire events**.
+can reload reloadable domains after YAML edits, can configure the Energy dashboard (sources and the
+Individual-devices list), manage Lovelace resources, and prune HACS repositories. It deliberately has
+**no tools to turn devices on/off, set states, or fire events**.
 
 ## Install
 
@@ -183,6 +183,33 @@ groupable ZHA endpoints (devices that support the Zigbee Groups cluster); `creat
 `list_zha_groupable`, or you can pass the `{ieee, endpoint_id}` pairs directly. The HA group entity
 is created asynchronously, so read its final `entity_id` from the entity registry afterwards.
 
+**Lovelace resources** (WebSocket)
+
+| Tool                       | Description                                                                |
+| -------------------------- | -------------------------------------------------------------------------- |
+| `list_lovelace_resources`  | Registered dashboard resources (id, type, url), e.g. `/hacsfiles/…`.       |
+| `create_lovelace_resource` | Register a JS/CSS URL loaded on every dashboard (defaults to module).      |
+| `update_lovelace_resource` | Change a resource's url and/or type by id.                                 |
+| `delete_lovelace_resource` | Remove a resource by id (e.g. the dangling one left after a HACS removal). |
+
+Resources are the JS/CSS bundles loaded into every dashboard (Settings → Dashboards → Resources).
+The write tools call `lovelace/resources/*`, **require an admin token**, and only work when the
+resource registry is in **storage mode** (`lovelace: mode: storage`); they are disabled if Lovelace
+is globally in YAML mode. This is config authoring, not device control.
+
+**HACS** (WebSocket)
+
+| Tool                     | Description                                                                     |
+| ------------------------ | ------------------------------------------------------------------------------- |
+| `list_hacs_repositories` | HACS repositories (installed-only by default): id, category, versions, paths.   |
+| `remove_hacs_repository` | Uninstall a repository by id — deletes its downloaded files and unregisters it. |
+
+`list_hacs_repositories` maps each repo to `id` + `local_path`/`file_name`, so you can tell which
+`/hacsfiles/…` Lovelace resource belongs to a plugin. `remove_hacs_repository` calls
+`hacs/repository/remove` (**admin token**) and deletes the plugin's files, but not its Lovelace
+resource — pair it with `delete_lovelace_resource` to fully clean up a frontend plugin. Removing an
+integration you still reference in YAML will break that config, so check usage first.
+
 ## Safety boundary
 
 - **No device control.** There is no generic `call_service`, no `set_state`, and no `fire_event`.
@@ -195,6 +222,11 @@ is created asynchronously, so read its final `entity_id` from the entity registr
 - **ZHA groups are writable** via `zha/group/*` (the `*_zha_group*` tools). Creating/editing a Zigbee
   group changes which group entities exist (config authoring), not any device's on/off state, and it
   needs an admin token. Still no `call_service`, `set_state`, or `fire_event`.
+- **Lovelace resources are writable** via `lovelace/resources/*` (the `*_lovelace_resource` tools) —
+  which JS/CSS bundles load into dashboards. Config authoring, admin token, storage-mode only.
+- **HACS repositories are removable** via `hacs/repository/remove` (`remove_hacs_repository`). This
+  uninstalls a plugin/integration/theme and deletes its files (admin token); there is no install tool
+  (the server never downloads third-party code). Still no `call_service`, `set_state`, or `fire_event`.
 - **Read tools expose your home's data** (entity names, states, areas) to the agent/LLM. Use a
   scoped HA user if that matters to you.
 - Prefer `https` and a trusted network path to your instance.

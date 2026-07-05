@@ -69,8 +69,11 @@ ok(await client.fetch(...)); } catch (e) { return err(e); } })`. The third argum
 - **Scope is read + validate + author config + reload — never device control.** Do not add
   `call_service`, `set_state`, or `fire_event`. New write capability must stay within the dev-assist
   boundary: `reload` is limited to the `RELOAD_TARGETS` allowlist in `src/tools/reload.ts`, the
-  `energy` tools write only Energy dashboard preferences via `energy/save_prefs`, and `rename_entity`
-  writes only registry metadata (`name`/`new_entity_id`) via `config/entity_registry/update` — all
+  `energy` tools write only Energy dashboard preferences via `energy/save_prefs`, `rename_entity`
+  writes only registry metadata (`name`/`new_entity_id`) via `config/entity_registry/update`, the
+  `zha` tools manage Zigbee groups via `zha/group/*`, the `resources` tools manage Lovelace resources
+  via `lovelace/resources/*`, and `remove_hacs_repository` uninstalls a HACS repo via
+  `hacs/repository/remove` (no install tool — the server never downloads third-party code) — all
   config authoring, not device control; HA requires an admin token for these writes.
 - **Secrets:** the repo is public. Never log the token; only read it from env. Tests use fake
   credentials.
