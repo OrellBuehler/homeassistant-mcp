@@ -12,9 +12,10 @@ AI agents.
 It is built to **help an agent author and validate Home Assistant configuration and automations** —
 not to control your home. It tells the agent what exists live (entities, services, events, areas,
 devices), validates the agent's work (render Jinja2 templates, check config, read the error log),
-can reload reloadable domains after YAML edits, can configure the Energy dashboard (sources and the
-Individual-devices list), manage Lovelace resources, and prune HACS repositories. It deliberately has
-**no tools to turn devices on/off, set states, or fire events**.
+authors automations (create/replace/delete via the config API), can reload reloadable domains after
+YAML edits, can configure the Energy dashboard (sources and the Individual-devices list), manage
+Lovelace resources, and prune HACS repositories. It deliberately has **no tools to turn devices
+on/off, set states, or fire events**.
 
 ## Install
 
@@ -118,6 +119,21 @@ available immediately. Verify with `claude mcp list` (should show `homeassistant
 | -------- | ------------------------------------------------------------------------------------------ |
 | `reload` | Reload a reloadable domain so YAML edits apply without a restart (`all`, `automation`, …). |
 
+**Automations** (REST, `/api/config/automation`)
+
+| Tool                    | Description                                                                    |
+| ----------------------- | ------------------------------------------------------------------------------ |
+| `get_automation_config` | Stored config (triggers/conditions/actions/mode) of one automation.            |
+| `upsert_automation`     | Create a new automation or replace an existing one's config (validated by HA). |
+| `delete_automation`     | Delete a UI-managed automation.                                                |
+
+All three accept the `automation.*` entity id (the internal id is resolved automatically) or the
+internal id itself. Writes require an **admin token**; HA validates the config, stores it in
+`automations.yaml` and reloads automations automatically. `upsert_automation` replaces the whole
+config, so edit via `get_automation_config` → modify → `upsert_automation`. Only automations with
+an `id` (UI-created / `automations.yaml`) are reachable — automations defined elsewhere in YAML are
+not. Debug the result with the trace tools below.
+
 **Registries** (WebSocket)
 
 | Tool                     | Description                                                                              |
@@ -217,6 +233,11 @@ integration you still reference in YAML will break that config, so check usage f
   The server cannot turn things on/off.
 - **`reload` is restricted** to a fixed allowlist of `*.reload` / `homeassistant.reload_*` services.
   It restarts reloadable domains (e.g. re-reads `automations.yaml`) but cannot control devices.
+- **Automation configs are writable** via the `/api/config/automation` REST API
+  (`upsert_automation` / `delete_automation`). This is the server's core purpose — authoring
+  automations — and needs an admin token. Be aware that an automation, once written, runs its
+  actions whenever its triggers fire, so review configs before writing. The server still cannot run
+  services directly: no `call_service`, `set_state`, or `fire_event`.
 - **Energy dashboard config is writable** via `energy/save_prefs` (the `*_energy_*` tools). This is
   configuration authoring — the dashboard's sources and Individual-devices list — not device control,
   and it needs an admin token. No `call_service`, `set_state`, or `fire_event` is added.

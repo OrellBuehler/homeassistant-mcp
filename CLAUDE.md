@@ -51,11 +51,11 @@ and connects it over stdio. Each tool calls either the REST `client` or the WebS
   envelopes; `ok` passes strings through unquoted), `summarizeState`, `domainOf`, and the `HassState`
   type.
 - **`src/tools/*.ts`** — each exports a `register*Tools(server, client|wsClient)` function that
-  `server.ts` calls. Groups: `entities`, `services`, `system`, `templates`, `history`, `reload` (REST),
-  `registry` (WebSocket), `energy` (Energy dashboard prefs over WebSocket), and `trace`
-  (automation/script execution traces over WebSocket). `energy` and `trace` also take the REST
-  `client` — energy to check entity eligibility, trace to resolve an automation's `id` — so their
-  signature is `register*Tools(server, wsClient, client)`.
+  `server.ts` calls. Groups: `entities`, `services`, `system`, `templates`, `history`, `reload`,
+  `automations` (REST), `registry`, `zha`, `hacs`, `resources` (WebSocket), `energy` (Energy
+  dashboard prefs over WebSocket), and `trace` (automation/script execution traces over WebSocket).
+  `energy` and `trace` also take the REST `client` — energy to check entity eligibility, trace to
+  resolve an automation's `id` — so their signature is `register*Tools(server, wsClient, client)`.
 
 ## Conventions
 
@@ -72,9 +72,12 @@ ok(await client.fetch(...)); } catch (e) { return err(e); } })`. The third argum
   `energy` tools write only Energy dashboard preferences via `energy/save_prefs`, `rename_entity`
   writes only registry metadata (`name`/`new_entity_id`) via `config/entity_registry/update`, the
   `zha` tools manage Zigbee groups via `zha/group/*`, the `resources` tools manage Lovelace resources
-  via `lovelace/resources/*`, and `remove_hacs_repository` uninstalls a HACS repo via
-  `hacs/repository/remove` (no install tool — the server never downloads third-party code) — all
-  config authoring, not device control; HA requires an admin token for these writes.
+  via `lovelace/resources/*`, `remove_hacs_repository` uninstalls a HACS repo via
+  `hacs/repository/remove` (no install tool — the server never downloads third-party code), and the
+  `automations` tools write automation configs via `/api/config/automation/config/{id}` (HA
+  validates, stores in `automations.yaml`, and reloads; an automation's actions do run when it
+  triggers, which is why authoring them is the point of this server) — all config authoring, not
+  device control; HA requires an admin token for these writes.
 - **Secrets:** the repo is public. Never log the token; only read it from env. Tests use fake
   credentials.
 

@@ -7,6 +7,7 @@ import { registerSystemTools } from "./tools/system.js";
 import { registerTemplateTools } from "./tools/templates.js";
 import { registerHistoryTools } from "./tools/history.js";
 import { registerReloadTools } from "./tools/reload.js";
+import { registerAutomationTools } from "./tools/automations.js";
 import { registerRegistryTools } from "./tools/registry.js";
 import { registerEnergyTools } from "./tools/energy.js";
 import { registerTraceTools } from "./tools/trace.js";
@@ -15,13 +16,14 @@ import { registerHacsTools } from "./tools/hacs.js";
 import { registerResourceTools } from "./tools/resources.js";
 
 export function createServer(client: HassClient, wsClient: HassWsClient): McpServer {
-  const server = new McpServer({ name: "homeassistant-mcp", version: "0.6.0" });
+  const server = new McpServer({ name: "homeassistant-mcp", version: "0.7.0" });
   registerEntityTools(server, client);
   registerServiceTools(server, client);
   registerSystemTools(server, client);
   registerTemplateTools(server, client);
   registerHistoryTools(server, client);
   registerReloadTools(server, client);
+  registerAutomationTools(server, client);
   registerRegistryTools(server, wsClient);
   registerEnergyTools(server, wsClient, client);
   registerTraceTools(server, wsClient, client);
