@@ -3,6 +3,7 @@ name: Publish
 on:
   release:
     types: [published]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -19,7 +20,9 @@ jobs:
           registry-url: https://registry.npmjs.org
           cache: npm
       - name: Update npm for trusted publishing
-        run: npm install -g npm@latest
+        # pinned to 11: self-upgrading the bundled npm 10 to npm 12 leaves a broken
+        # install (missing sigstore), which fails `npm publish` with provenance
+        run: npm install -g npm@11
       - run: npm ci
       - run: npm run build
       - run: npm test
