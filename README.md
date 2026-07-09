@@ -1,21 +1,46 @@
-# homeassistant-mcp
+# Home Assistant MCP Server
 
 [![npm](https://img.shields.io/npm/v/@orellbuehler/homeassistant-mcp.svg)](https://www.npmjs.com/package/@orellbuehler/homeassistant-mcp)
+[![npm downloads](https://img.shields.io/npm/dm/@orellbuehler/homeassistant-mcp.svg)](https://www.npmjs.com/package/@orellbuehler/homeassistant-mcp)
 [![CI](https://github.com/OrellBuehler/homeassistant-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/OrellBuehler/homeassistant-mcp/actions/workflows/ci.yml)
 [![node](https://img.shields.io/node/v/@orellbuehler/homeassistant-mcp.svg)](https://nodejs.org)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
-MCP server for [Home Assistant](https://www.home-assistant.io/) that exposes the
-[REST API](https://www.home-assistant.io/integrations/api/) and WebSocket registries as tools for
-AI agents.
+A [Model Context Protocol](https://modelcontextprotocol.io/) server that turns your
+[Home Assistant](https://www.home-assistant.io/) instance into a safe workbench for AI agents —
+built to **author and validate configuration and automations**, not to control your home.
 
-It is built to **help an agent author and validate Home Assistant configuration and automations** —
-not to control your home. It tells the agent what exists live (entities, services, events, areas,
-devices), validates the agent's work (render Jinja2 templates, check config, read the error log),
-authors automations (create/replace/delete via the config API), can reload reloadable domains after
-YAML edits, can configure the Energy dashboard (sources and the Individual-devices list), manage
-Lovelace resources, and prune HACS repositories. It deliberately has **no tools to turn devices
-on/off, set states, or fire events**.
+Point Claude (or any MCP client) at it and the agent can:
+
+- **See what exists, live** — entities, services, events, areas, devices, labels, state history,
+  logbook.
+- **Author configuration** — create/edit automations, configure the Energy dashboard, manage
+  Zigbee (ZHA) groups, register Lovelace resources, prune HACS repositories, rename entities,
+  reload YAML domains.
+- **Validate its own work** — render Jinja2 templates against live state, run HA's config check,
+  read the error log, and inspect step-by-step execution traces of automations it wrote.
+- **Never touch your devices** — there is deliberately no `call_service`, no `set_state`, and no
+  `fire_event`. The agent writes config; it cannot turn anything on or off.
+
+42 tools, zero install (`npx`), works with Claude Code, Claude Desktop, Cursor, and any other MCP
+client.
+
+## Example prompts
+
+> "Create an automation that turns on the porch light 30 minutes before sunset, but only when
+> someone is home."
+
+> "My 'goodnight' automation didn't fire last night. Figure out why."
+
+> "Write a template sensor for net grid power and validate it against live state before I put it
+> in my YAML."
+
+> "Set up my Energy dashboard: grid import/export from these two sensors, solar from the inverter,
+> and add every smart plug as an individual device."
+
+> "Group the three living-room bulbs into one Zigbee group so they dim in sync."
+
+> "I uninstalled a HACS card — find and remove the dangling Lovelace resource."
 
 ## Install
 
@@ -81,6 +106,10 @@ available immediately. Verify with `claude mcp list` (should show `homeassistant
 `/mcp` inside a session.
 
 ## Tools
+
+42 tools in 12 groups. REST tools go through the
+[Home Assistant REST API](https://www.home-assistant.io/integrations/api/); WebSocket tools use the
+config registries that are not exposed over REST.
 
 **Entities & state** (REST)
 
