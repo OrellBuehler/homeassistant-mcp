@@ -15,6 +15,13 @@ interface RegistryEntity {
   hidden_by?: string | null;
 }
 
+interface EntityRegistryUpdateResult {
+  entity_entry?: RegistryEntity;
+  require_restart?: boolean;
+  reload_delay?: number;
+  disabled_by?: string | null;
+}
+
 interface RegistryDevice {
   id: string;
   name?: string | null;
@@ -89,6 +96,59 @@ export function registerRegistryTools(server: McpServer, ws: HassWsClient) {
         if (name !== undefined) payload.name = name;
         if (new_entity_id !== undefined) payload.new_entity_id = new_entity_id;
         return ok(await ws.command("config/entity_registry/update", payload));
+      } catch (e) {
+        return err(e);
+      }
+    },
+  );
+
+  server.tool(
+    "set_entity_enabled",
+    "Enable or disable one or more entities in the entity registry via the WebSocket API (config/entity_registry/update with disabled_by = null to enable, 'user' to disable). This edits registry config only — it does not control any device. Each entity is updated independently: a failure on one is reported in its row and the rest still run. Enabling is NOT instant — HA only loads and starts polling a re-enabled entity after its config entry reloads (see 'reload_delay', usually 30 seconds) or, for integrations that cannot be unloaded, after a full restart ('require_restart'). Re-read list_registry_entities or list_entities after that delay.",
+    {
+      entity_ids: z
+        .array(z.string())
+        .min(1)
+        .describe("entity_id(s) to enable or disable, e.g. ['sensor.temp', 'light.kitchen']"),
+      enabled: z
+        .boolean()
+        .describe("true to enable (disabled_by null), false to disable (disabled_by 'user')"),
+    },
+    async ({ entity_ids, enabled }) => {
+      try {
+        const results: Record<string, unknown>[] = [];
+        for (const entity_id of entity_ids) {
+          try {
+            const res = (await ws.command("config/entity_registry/update", {
+              entity_id,
+              disabled_by: enabled ? null : "user",
+            })) as EntityRegistryUpdateResult;
+            const entry = res?.entity_entry ?? (res as RegistryEntity | undefined);
+            const row: Record<string, unknown> = {
+              entity_id,
+              ok: true,
+              disabled_by: entry?.disabled_by ?? null,
+            };
+            if (res?.require_restart) row.require_restart = true;
+            if (res?.reload_delay !== undefined) row.reload_delay = res.reload_delay;
+            results.push(row);
+          } catch (e) {
+            results.push({ entity_id, ok: false, error: String(e) });
+          }
+        }
+        const failed = results.filter((r) => r.ok !== true).length;
+        const payload: Record<string, unknown> = {
+          enabled,
+          count: results.length,
+          succeeded: results.length - failed,
+          failed,
+          results,
+        };
+        if (enabled && failed < results.length) {
+          payload.note =
+            "Enabled entities are not available immediately: Home Assistant loads them after the config entry reloads ('reload_delay' seconds, usually 30) or after a restart where 'require_restart' is set.";
+        }
+        return ok(payload);
       } catch (e) {
         return err(e);
       }

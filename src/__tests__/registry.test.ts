@@ -115,6 +115,90 @@ describe("registry tools", () => {
     expect(res.content[0].text).toContain("cover");
   });
 
+  it("set_entity_enabled disables each entity with disabled_by 'user'", async () => {
+    const command = vi
+      .fn()
+      .mockResolvedValueOnce({ entity_entry: { entity_id: "sensor.a", disabled_by: "user" } })
+      .mockResolvedValueOnce({ entity_entry: { entity_id: "sensor.b", disabled_by: "user" } });
+    const tools = collectTools(command);
+    const res = await tools.get("set_entity_enabled")!({
+      entity_ids: ["sensor.a", "sensor.b"],
+      enabled: false,
+    });
+    expect(command).toHaveBeenNthCalledWith(1, "config/entity_registry/update", {
+      entity_id: "sensor.a",
+      disabled_by: "user",
+    });
+    expect(command).toHaveBeenNthCalledWith(2, "config/entity_registry/update", {
+      entity_id: "sensor.b",
+      disabled_by: "user",
+    });
+    const payload = JSON.parse(res.content[0].text);
+    expect(payload).toMatchObject({ enabled: false, count: 2, succeeded: 2, failed: 0 });
+    expect(payload.results).toEqual([
+      { entity_id: "sensor.a", ok: true, disabled_by: "user" },
+      { entity_id: "sensor.b", ok: true, disabled_by: "user" },
+    ]);
+    expect(payload.note).toBeUndefined();
+  });
+
+  it("set_entity_enabled enables with disabled_by null and surfaces the reload hints", async () => {
+    const command = vi
+      .fn()
+      .mockResolvedValueOnce({
+        entity_entry: { entity_id: "sensor.a", disabled_by: null },
+        reload_delay: 30,
+      })
+      .mockResolvedValueOnce({
+        entity_entry: { entity_id: "sensor.b", disabled_by: null },
+        require_restart: true,
+      });
+    const tools = collectTools(command);
+    const res = await tools.get("set_entity_enabled")!({
+      entity_ids: ["sensor.a", "sensor.b"],
+      enabled: true,
+    });
+    expect(command).toHaveBeenNthCalledWith(1, "config/entity_registry/update", {
+      entity_id: "sensor.a",
+      disabled_by: null,
+    });
+    const payload = JSON.parse(res.content[0].text);
+    expect(payload).toMatchObject({ enabled: true, count: 2, succeeded: 2, failed: 0 });
+    expect(payload.results[0]).toEqual({
+      entity_id: "sensor.a",
+      ok: true,
+      disabled_by: null,
+      reload_delay: 30,
+    });
+    expect(payload.results[1]).toEqual({
+      entity_id: "sensor.b",
+      ok: true,
+      disabled_by: null,
+      require_restart: true,
+    });
+    expect(payload.note).toContain("not available immediately");
+  });
+
+  it("set_entity_enabled keeps going after a failure and reports it per entity", async () => {
+    const command = vi
+      .fn()
+      .mockResolvedValueOnce({ entity_entry: { entity_id: "sensor.a", disabled_by: null } })
+      .mockRejectedValueOnce(new Error("Entity not found"))
+      .mockResolvedValueOnce({ entity_entry: { entity_id: "sensor.c", disabled_by: null } });
+    const tools = collectTools(command);
+    const res = await tools.get("set_entity_enabled")!({
+      entity_ids: ["sensor.a", "sensor.missing", "sensor.c"],
+      enabled: true,
+    });
+    expect(command).toHaveBeenCalledTimes(3);
+    expect(res.isError).toBeUndefined();
+    const payload = JSON.parse(res.content[0].text);
+    expect(payload).toMatchObject({ count: 3, succeeded: 2, failed: 1 });
+    expect(payload.results[1].ok).toBe(false);
+    expect(payload.results[1].error).toContain("Entity not found");
+    expect(payload.results[2]).toMatchObject({ entity_id: "sensor.c", ok: true });
+  });
+
   it("list_devices prefers name_by_user over name", async () => {
     const command = vi.fn().mockResolvedValue([
       {

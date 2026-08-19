@@ -1,6 +1,6 @@
 {
   "name": "@orellbuehler/homeassistant-mcp",
-  "version": "0.7.2",
+  "version": "0.8.0",
   "description": "Model Context Protocol server for Home Assistant: introspect entities, services, events, registries, render templates and validate configuration to help AI agents author HA configs and automations.",
   "type": "module",
   "bin": {

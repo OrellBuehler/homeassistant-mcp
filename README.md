@@ -22,7 +22,7 @@ Point Claude (or any MCP client) at it and the agent can:
 - **Never touch your devices** — there is deliberately no `call_service`, no `set_state`, and no
   `fire_event`. The agent writes config; it cannot turn anything on or off.
 
-42 tools, zero install (`npx`), works with Claude Code, Claude Desktop, Cursor, and any other MCP
+43 tools, zero install (`npx`), works with Claude Code, Claude Desktop, Cursor, and any other MCP
 client.
 
 ## Example prompts
@@ -107,7 +107,7 @@ available immediately. Verify with `claude mcp list` (should show `homeassistant
 
 ## Tools
 
-42 tools in 12 groups. REST tools go through the
+43 tools in 12 groups. REST tools go through the
 [Home Assistant REST API](https://www.home-assistant.io/integrations/api/); WebSocket tools use the
 config registries that are not exposed over REST.
 
@@ -169,6 +169,7 @@ not. Debug the result with the trace tools below.
 | ------------------------ | ---------------------------------------------------------------------------------------- |
 | `list_registry_entities` | ALL registered entities, incl. disabled/unavailable (area, device, status).              |
 | `rename_entity`          | Set an entity's registry `name` and/or `new_entity_id` (config edit, no device control). |
+| `set_entity_enabled`     | Enable/disable entities in the registry (batch, per-entity results).                     |
 | `list_devices`           | Devices (id, name, manufacturer, model, area).                                           |
 | `list_areas`             | Areas (area_id, name, floor).                                                            |
 | `list_labels`            | Labels (label_id, name, color, icon).                                                    |
@@ -178,6 +179,11 @@ not. Debug the result with the trace tools below.
 `rename_entity` writes the registry via `config/entity_registry/update` (requires an admin token):
 `name` overrides the friendly name (null reverts to the integration's `original_name`) and
 `new_entity_id` renames the entity_id within the same domain.
+`set_entity_enabled` uses the same command (also admin-only) to set `disabled_by` to `null`
+(enable) or `"user"` (disable) for a batch of entity_ids; one failure does not abort the rest, and
+each entity comes back with its own `ok`/`error` and resulting `disabled_by`. Enabling is not
+instant — HA loads the entity after its config entry reloads (`reload_delay`, usually 30 seconds) or
+after a restart when the response sets `require_restart`.
 
 **Energy dashboard** (WebSocket)
 
